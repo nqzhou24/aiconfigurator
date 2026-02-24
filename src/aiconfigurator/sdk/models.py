@@ -92,7 +92,7 @@ def _infer_quant_modes_from_raw_config(raw_config: dict) -> dict[str, object]:
 
 
 def _apply_model_quant_defaults(
-    model_config: config.ModelConfig, raw_config: dict, architecture: str, backend_name: str
+    model_config: config.ModelConfig, raw_config: dict, architecture: str, backend_name: str, worker_name: str
 ) -> None:
     inferred = _infer_quant_modes_from_raw_config(raw_config)
     applied: list[str] = []
@@ -125,12 +125,13 @@ def _apply_model_quant_defaults(
         model_config.fmha_quant_mode = common.FMHAQuantMode.float16
 
     logger.info(
-        "Model config (final quant modes): gemm=%s moe=%s kvcache=%s fmha=%s comm=%s",
-        model_config.gemm_quant_mode,
-        model_config.moe_quant_mode,
-        model_config.kvcache_quant_mode,
-        model_config.fmha_quant_mode,
-        model_config.comm_quant_mode,
+        "Resolved quant modes for %s: gemm=%s moe=%s kvcache=%s fmha=%s comm=%s",
+        worker_name,
+        model_config.gemm_quant_mode.value,
+        model_config.moe_quant_mode.value,
+        model_config.kvcache_quant_mode.value,
+        model_config.fmha_quant_mode.value,
+        model_config.comm_quant_mode.value,
     )
 
 
@@ -143,7 +144,6 @@ def get_model(
     Get model.
     """
     model_info = _get_model_info(model_path)
-    raw_config = model_info.get("raw_config", {})
     architecture = model_info["architecture"]
     layers = model_info["layers"]
     n = model_info["n"]
@@ -159,8 +159,6 @@ def get_model(
     extra_params = model_info["extra_params"]
     # Convert architecture (e.g., 'LlamaForCausalLM') to model family (e.g., 'LLAMA')
     model_family = _architecture_to_model_family(architecture)
-
-    _apply_model_quant_defaults(model_config, raw_config, architecture, backend_name)
 
     if model_config.overwrite_num_layers > 0:
         layers = model_config.overwrite_num_layers

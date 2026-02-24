@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import textwrap
 import time
 from typing import Any
 
@@ -21,6 +22,7 @@ from aiconfigurator.generator.api import (
     generate_naive_config,
     generator_cli_helper,
 )
+from aiconfigurator.logging_utils import ColoredFormatter
 from aiconfigurator.sdk import common, perf_database
 from aiconfigurator.sdk.task import TaskConfig, TaskRunner
 from aiconfigurator.sdk.utils import get_model_config_from_model_path
@@ -852,7 +854,7 @@ def _execute_task_configs(
     for exp_name, task_config in task_configs.items():
         try:
             logger.info("Starting experiment: %s", exp_name)
-            logger.info("Task config: %s", task_config.pretty())
+            logger.debug("Task config: \n%s", textwrap.indent(task_config.pretty(), "    "))
             task_result = runner.run(task_config)
             pareto_df = task_result["pareto_df"]
             if pareto_df is not None and not pareto_df.empty:
@@ -1292,10 +1294,20 @@ def _run_estimate_mode(args):
 
 
 def main(args):
-    logging.basicConfig(
-        level=logging.DEBUG if args.debug else logging.INFO,
-        format="%(levelname)s %(asctime)s %(filename)s:%(lineno)d] %(message)s",
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
+
+    # Remove existing handlers
+    root_logger.handlers.clear()
+
+    # Create console handler with colored formatter
+    console_handler = logging.StreamHandler(sys.stdout)
+    formatter = ColoredFormatter(
+        "%(asctime)s [aiconfigurator] [%(levelname).1s] [%(filename)s:%(lineno)d] %(message)s",
+        datefmt="%H:%M:%S",
     )
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
 
     # Handle support mode early — it doesn't need systems_paths or top_n
     if args.mode == "support":
