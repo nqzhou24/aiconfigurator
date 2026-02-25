@@ -11,29 +11,8 @@ from aiconfigurator.cli.main import main as cli_main
 from aiconfigurator.eval.main import configure_parser as configure_eval_parser
 from aiconfigurator.eval.main import main as eval_main
 from aiconfigurator.generator.api import generator_cli_helper
-from aiconfigurator.logging_utils import ColoredFormatter
 
-
-def setup_logging(level=logging.INFO):
-    """Setup logging with colored formatter."""
-    root_logger = logging.getLogger()
-    root_logger.setLevel(level)
-
-    # Remove existing handlers
-    root_logger.handlers.clear()
-
-    # Create console handler with colored formatter
-    console_handler = logging.StreamHandler(sys.stdout)
-    formatter = ColoredFormatter(
-        "%(asctime)s [aiconfigurator] [%(levelname).1s] [%(filename)s:%(lineno)d] %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    console_handler.setFormatter(formatter)
-    root_logger.addHandler(console_handler)
-
-
-# Setup logging
-setup_logging(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -114,7 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     args, extras = parser.parse_known_args(argv)
 
     if getattr(args, "debug", False):
-        setup_logging(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG)
         logger.setLevel(logging.DEBUG)
 
     # extras contains the arguments for the selected sub-command
